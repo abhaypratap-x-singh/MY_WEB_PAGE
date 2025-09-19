@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JPA Batch Tracker - Live Batch Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            overflow-x: auto;
+        }
+
+        /* Header Styles */
+        .header {
+            background-color: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            font-weight: bold;
+            font-size: 18px;
+            color: #0066cc;
+        }
+
+        .title-section h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .title-section p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .icon-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Navigation Styles */
+        .nav-container {
+            background-color: white;
+            padding: 0 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-tab.active {
+            color: #0066cc;
+            border-bottom-color: #0066cc;
+            background-color: #f8f9ff;
+        }
+
+        .nav-tab:hover {
+            color: #0066cc;
+            background-color: #f8f9ff;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 20px;
+            max-width: 100%;
+        }
+
+        /* Filters Section */
+        .filters-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        /* Status Indicators */
+        .status-indicators {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .status-connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-fallback {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+        }
+
+        /* Table Styles */
+        .table-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background-color: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .refresh-info {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #0066cc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table th {
+            background-color: #f8f9fa;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .data-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+
+        .data-table tr:hover {
+            background-color: #f8f9ff;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        .data-table tr:nth-child(even):hover {
+            background-color: #f8f9ff;
+        }
+
+        /* Grouped Rows */
+        .group-row {
+            background-color: #eef5ff;
+            cursor: pointer;
+        }
+        .group-cell {
+            font-weight: 600;
+        }
+        .caret {
+            display: inline-block;
+            width: 14px;
+            margin-right: 6px;
+        }
+        
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-started {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .status-awaited {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Source Indicators */
+        .source-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            background-color: #e9ecef;
+            color: #495057;
+        }
+
+        .source-sap {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .source-pasx {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #dc3545;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 20px;
+        }
+
+        /* Debug Panel */
+        .debug-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            max-width: 400px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .debug-panel.show {
+            display: block;
+        }
+
+        .debug-panel h4 {
+            margin-bottom: 10px;
+            color: #ffc107;
+        }
+
+        .debug-panel p {
+            margin: 5px 0;
+            word-break: break-all;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .filters-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .status-indicators {
+                margin-left: 0;
+                justify-content: center;
+            }
+
+            .data-table {
+                font-size: 11px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 6px 4px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0066cc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+   
+
+    <!-- Navigation -->
+    <div class="nav-container">
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="running-batches">Running Batches Drill Down</button>
+            <button class="nav-tab" data-tab="individual-batches">Individual Running Batch Details</button>
+            <!-- Removed Historical Batches tab button -->
+            <button class="nav-tab" data-tab="api-raw">API Raw Data</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+
+    <div class="main-content">
+        <!-- Tab Content: Running Batches, Individual, Historical, API Raw -->
+        <div id="tab-running-batches" class="tab-content">
+            <!-- Filters Section -->
+            <div class="filters-section">
+                <div class="filter-group">
+                    <label>Batch Number</label>
+                    <select id="batchNumber">
+                        <option value="">All Batches</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Function</label>
+                    <select id="function">
+                        <option value="">All Functions</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Business Process</label>
+                    <select id="businessProcess">
+                        <option value="">All Processes</option>
+                    </select>
+                </div>
+                <div class="status-indicators">
+                    <div class="status-indicator" id="connectionStatus">
+                        <div class="status-dot"></div>
+                        <span>Connecting...</span>
+                    </div>
+                    <div class="status-indicator" id="apiStatus">
+                        <div class="status-dot"></div>
+                        <span>Initializing...</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Table Container -->
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Batch Progress Data</div>
+                    <div class="refresh-info">
+                        <div class="refresh-indicator" id="refreshIndicator">
+                            <div class="spinner"></div>
+                            <span>Refreshing...</span>
+                        </div>
+                        <span id="lastRefresh">Never</span>
+                    </div>
+                </div>
+                <table class="data-table" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Batch Number</th>
+                            <th>Business Process</th>
+                            <th>Function</th>
+                            <th>Order No.</th>
+                            <th>Material No.</th>
+                            <th>Source</th>
+                            <th>Actual Start Time</th>
+                            <th>Actual End Time</th>
+                            <th>Act Days</th>
+                            <th>Sct Days</th>
+                            <th>Batch Progress</th>
+                            <th>Batch Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="12" style="text-align: center; padding: 40px; color: #666;">
+                                <div class="spinner"></div>
+                                <p style="margin-top: 10px;">Loading data from HighByte API...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="tab-api-raw" class="tab-content" style="display:none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">API Raw Response (Tabular View)</div>
+                </div>
+                <div id="apiRawTableContainer" style="overflow-x:auto;"></div>
+            </div>
+        </div>
+        <!-- Placeholder for other tabs if needed -->
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        CONFIDENTIAL - This document contains confidential and proprietary information of Haleon
+    </div>
+
+    <!-- Debug Panel -->
+    <div class="debug-panel" id="debugPanel">
+        <h4>Debug Information</h4>
+        <p id="debugInfo">Initializing...</p>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        class JPABatchTracker {
+            // ...existing code...
+            constructor() {
+                // Exact URL and Bearer Token as provided
+                this.apiUrl = 'http://10.23.9.147:443/data/v1/pipelines/ToPBI/value';
+                this.bearerToken = 'Demo_090.sVWBmTCz+crVSs2KfYRePzVkJGEqrajW/qyomlGO2zg=';
+                this.refreshInterval = 5000; // 5 seconds
+                this.currentData = [];
+                this.filteredData = [];
+                this.currentTab = 'running-batches';
+                this.filtersKey = 'jpaBatchTrackerFilters';
+                this.expandedBatches = new Set();
+                this.sortColumn = null;
+                this.sortDirection = 'asc';
+                this.isUsingFallback = false;
+                this.retryCount = 0;
+                this.maxRetries = 3;
+                this.init();
+            }
+
+            // Helper to safely parse various datetime formats into Date or null
+            parseDateTime(value) {
+                if (value === undefined || value === null) return null;
+                // If already a Date
+                if (value instanceof Date) return isNaN(value) ? null : value;
+                // Numeric epoch seconds or ms
+                if (typeof value === 'number') {
+                    const msGuess = value > 1e12 ? value : (value > 1e10 ? value : value * 1000);
+                    const d = new Date(msGuess);
+                    return isNaN(d) ? null : d;
+                }
+                if (typeof value === 'string') {
+                    const trimmed = value.trim();
+                    if (!trimmed) return null;
+                    // Pure numeric string (epoch)
+                    if (/^\d+$/.test(trimmed)) {
+                        const num = Number(trimmed);
+                        const msGuess = num > 1e12 ? num : (num > 1e10 ? num : num * 1000);
+                        const d = new Date(msGuess);
+                        return isNaN(d) ? null : d;
+                    }
+                    // Try native parsing
+                    let d = new Date(trimmed);
+                    if (!isNaN(d)) return d;
+                    // Try replace space with T
+                    d = new Date(trimmed.replace(' ', 'T'));
+                    if (!isNaN(d)) return d;
+                }
+                return null;
+            }
+
+            saveFilters() {
+                try {
+                    const filters = {
+                        batchNumber: document.getElementById('batchNumber').value,
+                        functionName: document.getElementById('function').value,
+                        businessProcess: document.getElementById('businessProcess').value
+                    };
+                    localStorage.setItem(this.filtersKey, JSON.stringify(filters));
+                } catch (e) {
+                    // ignore storage errors
+                }
+            }
+
+            getSavedFilters() {
+                try {
+                    const raw = localStorage.getItem(this.filtersKey);
+                    return raw ? JSON.parse(raw) : {};
+                } catch (e) {
+                    return {};
+                }
+            }
+
+            applySavedFilters() {
+                const { batchNumber, functionName, businessProcess } = this.getSavedFilters();
+                const batchSelect = document.getElementById('batchNumber');
+                const functionSelect = document.getElementById('function');
+                const businessProcessSelect = document.getElementById('businessProcess');
+
+                if (batchNumber && Array.from(batchSelect.options).some(o => o.value === batchNumber)) {
+                    batchSelect.value = batchNumber;
+                }
+                if (functionName && Array.from(functionSelect.options).some(o => o.value === functionName)) {
+                    functionSelect.value = functionName;
+                }
+                if (businessProcess && Array.from(businessProcessSelect.options).some(o => o.value === businessProcess)) {
+                    businessProcessSelect.value = businessProcess;
+                }
+            }
+
+            // Compute Act Days for a grouped set of items
+            computeActDays(items) {
+                const msPerDay = 1000 * 60 * 60 * 24;
+                const hasStartFlag = (it) => ((it.BpId || '') + '').toLowerCase().includes('_start');
+                const hasEndFlag = (it) => ((it.BpId || '') + '').toLowerCase().includes('_end');
+
+                // Prefer start times from _start BPs
+                let startDates = items
+                    .filter(hasStartFlag)
+                    .map(it => this.parseDateTime(it.ActualStartTime) || this.parseDateTime(it['Converted DateTime']) || this.parseDateTime(it.PlannedStartTime))
+                    .filter(d => d && !isNaN(d));
+                // Fallback: any ActualStartTime
+                if (startDates.length === 0) {
+                    startDates = items
+                        .map(it => this.parseDateTime(it.ActualStartTime) || this.parseDateTime(it['Converted DateTime']) || this.parseDateTime(it.PlannedStartTime))
+                        .filter(d => d && !isNaN(d));
+                }
+
+                // Prefer end times from _end BPs
+                let endDates = items
+                    .filter(hasEndFlag)
+                    .map(it => this.parseDateTime(it.ActualEndTime) || this.parseDateTime(it.AcutualEndTime) || this.parseDateTime(it['Converted DateTime']) || this.parseDateTime(it.PlannedEndTime))
+                    .filter(d => d && !isNaN(d));
+                // Fallback: any ActualEndTime
+                if (endDates.length === 0) {
+                    endDates = items
+                        .map(it => this.parseDateTime(it.ActualEndTime) || this.parseDateTime(it.AcutualEndTime) || this.parseDateTime(it['Converted DateTime']) || this.parseDateTime(it.PlannedEndTime))
+                        .filter(d => d && !isNaN(d));
+                }
+
+                if (startDates.length === 0 || endDates.length === 0) {
+                    return '0.00';
+                }
+
+                const earliestStart = new Date(Math.min(...startDates.map(d => d.getTime())));
+                const latestEnd = new Date(Math.max(...endDates.map(d => d.getTime())));
+                const diff = (latestEnd - earliestStart) / msPerDay;
+                const validDiff = isFinite(diff) && diff > 0 ? diff : 0;
+                return validDiff.toFixed(2);
+            }
+
+            computeSctDays(items) {
+                const hasStartFlag = (it) => ((it.BpId || '') + '').toLowerCase().includes('_start');
+                const hasEndFlag = (it) => ((it.BpId || '') + '').toLowerCase().includes('_end');
+                const toNum = (v) => {
+                    const n = parseFloat(v);
+                    return isFinite(n) ? n : null;
+                };
+
+                // Prefer StandardCycleTime from _start items
+                const startVals = items
+                    .filter(hasStartFlag)
+                    .map(it => toNum(it.StandardCycleTime))
+                    .filter(v => v !== null);
+                if (startVals.length > 0) return startVals[0].toFixed(2);
+
+                // Next, try _end items
+                const endVals = items
+                    .filter(hasEndFlag)
+                    .map(it => toNum(it.StandardCycleTime))
+                    .filter(v => v !== null);
+                if (endVals.length > 0) return endVals[0].toFixed(2);
+
+                // Fallback: any StandardCycleTime in the group
+                const anyVals = items
+                    .map(it => toNum(it.StandardCycleTime))
+                    .filter(v => v !== null);
+                if (anyVals.length > 0) return anyVals[0].toFixed(2);
+
+                return '0.00';
+            }
+
+            // Compute formatted Actual Start Time for the group using BpId rules
+            computeActualStartTime(items) {
+                const hasStartFlag = (it) => ((it.BpId || '') + '').toLowerCase().includes('_start');
+                const preferred = items
+                    .filter(hasStartFlag)
+                    .map(it => this.parseDateTime(it.ActualStartTime) || this.parseDateTime(it['Converted DateTime']) || this.parseDateTime(it.PlannedStartTime))
+                    .filter(d => d && !isNaN(d));
+                let date = preferred.length > 0 ? new Date(Math.min(...preferred.map(d => d.getTime()))) : null;
+                if (!date) {
+                    const any = items
+                        .map(it => this.parseDateTime(it.ActualStartTime) || this.parseDateTime(it['Converted DateTime']) || this.parseDateTime(it.PlannedStartTime))
+                        .filter(d => d && !isNaN(d));
+                    date = any.length > 0 ? new Date(Math.min(...any.map(d => d.getTime()))) : null;
+                }
+                return date ? date.toLocaleString() : '';
+            }
+
+            // Compute formatted Actual End Time for the group using BpId rules (handle AcutualEndTime typo)
+            computeActualEndTime(items) {
+                const hasEndFlag = (it) => ((it.BpId || '') + '').toLowerCase().includes('_end');
+                const parseActualEnd = (it) => this.parseDateTime(it.ActualEndTime) || this.parseDateTime(it.AcutualEndTime);
+
+                // For all Business Processes, only use ActualEndTime/AcutualEndTime; otherwise keep blank
+                const preferred = items
+                    .filter(hasEndFlag)
+                    .map(parseActualEnd)
+                    .filter(d => d && !isNaN(d));
+                let date = preferred.length > 0 ? new Date(Math.max(...preferred.map(d => d.getTime()))) : null;
+                if (!date) {
+                    const any = items
+                        .map(parseActualEnd)
+                        .filter(d => d && !isNaN(d));
+                    date = any.length > 0 ? new Date(Math.max(...any.map(d => d.getTime()))) : null;
+                }
+                return date ? date.toLocaleString() : '';
+            }
+
+            async init() {
+                this.showLoadingOverlay();
+                await this.loadData();
+                this.setupEventListeners();
+                this.populateFilters();
+                this.applySavedFilters(); // Apply saved filters on page load
+                this.startAutoRefresh();
+                this.hideLoadingOverlay();
+            }
+
+            setupEventListeners() {
+                // Tab navigation
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
+                });
+
+                // Filter change listeners
+                document.getElementById('batchNumber').addEventListener('change', () => { this.saveFilters(); this.filterData(); });
+                document.getElementById('function').addEventListener('change', () => { this.saveFilters(); this.filterData(); });
+                document.getElementById('businessProcess').addEventListener('change', () => { this.saveFilters(); this.filterData(); });
+
+                // Manual refresh
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+                        e.preventDefault();
+                        this.loadData();
+                    }
+                });
+
+                // Debug panel toggle
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                        e.preventDefault();
+                        this.toggleDebugPanel();
+                    }
+                });
+            }
+
+            async loadData() {
+                try {
+                    this.updateDebugInfo('Attempting to fetch data from HighByte API...');
+                    console.log('Fetching data from:', this.apiUrl);
+                    console.log('Using Bearer Token:', this.bearerToken);
+                    
+                    // Method 1: Try with CORS mode
+                    // Prepare the request data
+                    const requestData = {
+                    };
+                    
+                    console.log('Request data:', requestData);
+                    
+                    // Method 1: Try with CORS mode using POST
+                    let response;
+                    try {
+                        response = await fetch(this.apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${this.bearerToken}`,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify(requestData),
+                            mode: 'cors'
+                        });
+                    } catch (corsError) {
+                        console.log('CORS error, trying no-cors mode...', corsError);
+                        
+                        // Method 2: Try with no-cors mode using POST (limited response access)
+                        response = await fetch(this.apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${this.bearerToken}`,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify(requestData),
+                            mode: 'no-cors'
+                        });
+                        
+                        // With no-cors, we can't read the response body, so we'll use fallback
+                        throw new Error('No-CORS mode - using fallback data');
+                    }
+                    
+                    
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('API Response received:', data);
+                    
+                    this.currentData = data;
+                    this.populateFilters(true);
+                    this.applySavedFilters();
+                    this.filterData();
+                    this.showRefreshIndicator();
+                    this.updateLastRefresh();
+                    this.updateConnectionStatus('connected');
+                    this.updateApiStatus('Connected to HighByte API');
+                    this.isUsingFallback = false;
+                    this.retryCount = 0;
+                    
+                } catch (error) {
+                    console.error('Error loading data from API:', error);
+                    this.updateDebugInfo(`API Error: ${error.message}`);
+                    
+                    // If API fails, use fallback data
+                    this.loadFallbackData();
+                    this.updateConnectionStatus('fallback');
+                    this.updateApiStatus('Using Fallback Data (API Unavailable)');
+                    
+                    // Retry logic
+                    if (this.retryCount < this.maxRetries) {
+                        this.retryCount++;
+                        this.updateDebugInfo(`Retrying in 10 seconds... (Attempt ${this.retryCount}/${this.maxRetries})`);
+                        setTimeout(() => this.loadData(), 10000);
+                    }
+                }
+            }
+
+            loadFallbackData() {
+                console.log('Loading fallback data...');
+                this.updateDebugInfo('Loading fallback data from sample JSON...');
+                
+                // Use the sample data you provided
+                const fallbackData = [
+                    {
+                        "_id": 1,
+                        "_timestamp": 0,
+                        ".Enterprise": "",
+                        "Location": "",
+                        "Site": "",
+                        "Area": "",
+                        "Unit": "",
+                        "PlantCode": "",
+                        "Function": "",
+                        "BusinessProcess": "",
+                        "BpId": "",
+                        "BatchNumber": "",
+                        "ValueStream": "",
+                        "ProductName": "",
+                        "PlannedEndTime": "",
+                        "PlannedStartTime": "",
+                        "ActualEndTime": "",
+                        "StandardCycleTime": 0.0,
+                        "BatchProgress": "",
+                        "BatchType": "",
+                        "Order Number": 0,
+                        "SFOMaterialNumber": "",
+                        "SFOMaterialName": "",
+                        "SFOLocation": "",
+                        "SFOStatus": "",
+                        "SFOCustomerID": 0,
+                        "Activity": "",
+                        "ActualStartTime": "",
+                        "ActualCycleTime": "",
+                        "Delay": "",
+                        "BatchStatus": "",
+                        "MaterialNumber": "",
+                        "MaterialType": "",
+                        "MaterialDescription": "",
+                        "InspectionLot": "",
+                        "MovementType": "",
+                        "OrderType": "",
+                        "PackagingOrderNumber": "",
+                        "BP_ID": "",
+                        "Business Process Activity": "",
+                        "Business Process Number": 0,
+                        "Converted DateTime": ""
+                    }
+                ];
+                
+                this.currentData = fallbackData;
+                this.populateFilters(true);
+                this.applySavedFilters();
+                this.filterData();
+                this.isUsingFallback = true;
+            }
+
+            renderTable() {
+                const tbody = document.getElementById('tableBody');
+                // Remove all existing rows
+                while (tbody.firstChild) {
+                    tbody.removeChild(tbody.firstChild);
+                }
+
+                if (this.filteredData.length === 0) {
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.innerHTML = `<td colspan="12" style="text-align: center; padding: 40px; color: #666;">No data available</td>`;
+                    tbody.appendChild(emptyRow);
+                    return;
+                }
+
+                // Group data by BatchNumber first
+                const batches = this.filteredData.reduce((acc, item) => {
+                    const batchNumber = item.BatchNumber || item['Batch Number'] || '';
+                    if (!acc[batchNumber]) acc[batchNumber] = [];
+                    acc[batchNumber].push(item);
+                    return acc;
+                }, {});
+
+                // Initialize default expanded state on first render
+                if (!this._expandedInitDone) {
+                    Object.keys(batches).forEach(bn => this.expandedBatches.add(bn));
+                    this._expandedInitDone = true;
+                }
+
+                Object.entries(batches).forEach(([batchNumber, itemsForBatch]) => {
+                    // Parent group row
+                    const isExpanded = this.expandedBatches.has(batchNumber);
+                    const groupRow = document.createElement('tr');
+                    groupRow.className = 'group-row';
+                    groupRow.setAttribute('data-batch', batchNumber);
+                    groupRow.innerHTML = `
+                        <td class="group-cell">${isExpanded ? '<span class="caret">?</span>' : '<span class="caret">?</span>'}${batchNumber || '(No Batch)'}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    `;
+                    groupRow.addEventListener('click', () => this.toggleBatchExpansion(batchNumber));
+                    tbody.appendChild(groupRow);
+
+                    // If expanded, render child rows per Business Process
+                    if (isExpanded) {
+                        const byProcess = itemsForBatch.reduce((acc, item) => {
+                            const businessProcess = item.BusinessProcess || item['Business Process'] || '';
+                            if (!acc[businessProcess]) acc[businessProcess] = [];
+                            acc[businessProcess].push(item);
+                            return acc;
+                        }, {});
+
+                        Object.entries(byProcess).forEach(([businessProcess, items]) => {
+                            const row = document.createElement('tr');
+
+                            const sample = items[0] || {};
+                            const functionName = sample.Function || '';
+                            const source = this.getSourceValue(businessProcess);
+                            const orderNo = this.getOrderNumber(items);
+                            const materialNo = this.getMaterialNumber(items);
+                            const activity = this.getActivity(items);
+                            const bpDisplay = activity ? `${businessProcess}_${activity}` : businessProcess;
+
+                            // Calculate fields using existing helpers on this subgroup
+                            const actDays = this.computeActDays(items);
+                            const sctDays = this.computeSctDays(items);
+
+                            let batchProgress = 'Awaited';
+                            if (items.some(item => ((item.BpId || '') + '').includes('_end'))) {
+                                batchProgress = 'Completed';
+                            } else if (items.some(item => ((item.BpId || '') + '').includes('_start'))) {
+                                batchProgress = 'In Progress';
+                            }
+
+                                                        const actualStart = this.computeActualStartTime(items);
+                            const actualEnd = this.computeActualEndTime(items);
+
+                            // Compute Batch Status only when Completed: Delay if Act Days > Sct Days * 1.1 else On-time
+                            const actDaysNum = parseFloat(actDays);
+                            const sctDaysNum = parseFloat(sctDays);
+                            let batchStatus = '';
+                            if (batchProgress === 'Completed' && isFinite(actDaysNum) && isFinite(sctDaysNum) && sctDaysNum > 0) {
+                                batchStatus = actDaysNum > (sctDaysNum * 1.1) ? 'Delay' : 'On-time';
+                            }
+
+                            row.innerHTML = `
+                                <td>${batchNumber}</td>
+                                <td>${bpDisplay}</td>
+                                <td>${functionName}</td>
+                                <td>${orderNo}</td>
+                                <td>${materialNo}</td>
+                                <td>
+                                    <span class="source-indicator">${source}</span>
+                                </td>
+                                <td>${actualStart}</td>
+                                <td>${actualEnd}</td>
+                                <td>${actDays}</td>
+                                <td>${sctDays}</td>
+                                <td>
+                                    <span class="status-badge status-${this.getStatusClass(batchProgress)}">
+                                        ${batchProgress}
+                                    </span>
+                                </td>
+                                <td>${batchStatus}</td>
+                            `;
+                            row.setAttribute('data-batch-child', batchNumber);
+                            tbody.appendChild(row);
+                        });
+                    }
+                });
+            }
+            
+            toggleBatchExpansion(batchNumber) {
+                if (this.expandedBatches.has(batchNumber)) {
+                    this.expandedBatches.delete(batchNumber);
+                } else {
+                    this.expandedBatches.add(batchNumber);
+                }
+                this.renderTable();
+            }
+
+            getSourceValue(businessProcess) {
+                // Mapping of BusinessProcess to Source
+                const sourceMapping = {
+                    "BP 4": "SAP/PAS-X",
+                    "BP14": "SAP/PAS-X",
+                    "BP 5": "SAP",
+                    "BP 9": "SAP",
+                    "BP10": "SAP",
+                    "BP12": "SAP",
+                    "BP13": "SAP",
+                    "BP 6.1": "PAS-X",
+                    "BP 6.2": "PAS-X",
+                    "BP 8.1": "PAS-X",
+                    "BP 8.2": "PAS-X",
+                    "BP 8.4": "PAS-X",
+                    "BP 8.5": "PAS-X",
+                    "BP16.3": "PAS-X",
+                    "BP16.5": "PAS-X",
+                    "BP 6.0": "PAS-X",
+                    "BP 8.0": "PAS-X"
+                };
+
+                // Return the mapped source or a default value
+                return sourceMapping[businessProcess] || "Unknown";
+            }
+
+            getOrderNumber(items) {
+                // Prefer explicit ManufacturingOrderNumber-like fields, fall back to common variants
+                const candidateKeys = [
+                    'ManufacturingOrderNumber',
+                    'Manufacturing Order Number',
+                    'OrderNumber',
+                    'Order Number'
+                ];
+                const values = [];
+                items.forEach(it => {
+                    for (const k of candidateKeys) {
+                        const v = it[k];
+                        if (v !== undefined && v !== null && `${v}`.trim() !== '') {
+                            values.push(`${v}`.trim());
+                            break;
+                        }
+                    }
+                });
+                const unique = [...new Set(values)];
+                return unique.length > 0 ? unique[0] : '';
+            }
+
+            getMaterialNumber(items) {
+                // Prefer MaterialNumber, fall back to common variants
+                const candidateKeys = [
+                    'MaterialNumber',
+                    'Material Number',
+                    'SFOMaterialNumber'
+                ];
+                const values = [];
+                items.forEach(it => {
+                    for (const k of candidateKeys) {
+                        const v = it[k];
+                        if (v !== undefined && v !== null && `${v}`.trim() !== '') {
+                            values.push(`${v}`.trim());
+                            break;
+                        }
+                    }
+                });
+                const unique = [...new Set(values)];
+                return unique.length > 0 ? unique[0] : '';
+            }
+            
+            getActivity(items) {
+                // Prefer Activity, fall back to common variants
+                const candidateKeys = [
+                    'Activity',
+                    'Business Process Activity'
+                ];
+                const values = [];
+                items.forEach(it => {
+                    for (const k of candidateKeys) {
+                        const v = it[k];
+                        if (v !== undefined && v !== null && `${v}`.trim() !== '') {
+                            values.push(`${v}`.trim());
+                            break;
+                        }
+                    }
+                });
+                const unique = [...new Set(values)];
+                return unique.length > 0 ? unique[0] : '';
+            }
+            
+            getSFOValue(items) {
+                // Collect all unique SFOCustomerID values for the given BusinessProcess
+                const sfoValues = items
+                    .filter(item => item.SFOCustomerID) // Ensure SFOCustomerID exists
+                    .map(item => item.SFOCustomerID); // Extract SFOCustomerID values
+
+                // Join all unique SFOCustomerID values with a space
+                return [...new Set(sfoValues)].join('');
+            }
+
+            renderApiRawTable() {
+                const container = document.getElementById('apiRawTableContainer');
+                container.innerHTML = '';
+                const data = this.currentData;
+                if (!Array.isArray(data) || data.length === 0) {
+                    container.innerHTML = '<div style="padding:30px;text-align:center;color:#666;">No API data available</div>';
+                    return;
+                }
+                // Collect all unique keys
+                const allKeys = Array.from(data.reduce((set, item) => {
+                    Object.keys(item).forEach(k => set.add(k));
+                    return set;
+                }, new Set()));
+                // Build table
+                let html = '<table class="data-table" style="font-size:12px;">';
+                html += '<thead><tr>' + allKeys.map(k => `<th>${k}</th>`).join('') + '</tr></thead>';
+                html += '<tbody>';
+                data.forEach(item => {
+                    html += '<tr>' + allKeys.map(k => `<td>${item[k] !== undefined ? item[k] : ''}</td>`).join('') + '</tr>';
+                });
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            getStatusClass(status) {
+                if (!status) return 'error';
+                const statusLower = status.toLowerCase();
+                if (statusLower.includes('completed')) return 'completed';
+                if (statusLower.includes('started')) return 'started';
+                if (statusLower.includes('awaited')) return 'awaited';
+                return 'error';
+            }
+
+            populateFilters(preserveCurrent = true) {
+                const batchSelect = document.getElementById('batchNumber');
+                const functionSelect = document.getElementById('function');
+                const businessProcessSelect = document.getElementById('businessProcess');
+
+                const currentValues = preserveCurrent ? {
+                    batch: batchSelect.value,
+                    func: functionSelect.value,
+                    bp: businessProcessSelect.value
+                } : { batch: '', func: '', bp: '' };
+
+                // Get unique values for filters
+                const batchNumbers = [...new Set(this.currentData.map(item => item.BatchNumber || item['Batch Number']).filter(Boolean))];
+                const functions = [...new Set(this.currentData.map(item => item.Function).filter(Boolean))];
+                const businessProcesses = [...new Set(this.currentData.map(item => item.BusinessProcess || item['Business Process']).filter(Boolean))];
+
+                const resetSelect = (el, placeholder) => {
+                    el.innerHTML = '';
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = placeholder;
+                    el.appendChild(opt);
+                };
+
+                resetSelect(batchSelect, 'All Batches');
+                resetSelect(functionSelect, 'All Functions');
+                resetSelect(businessProcessSelect, 'All Processes');
+
+                batchNumbers.forEach(batch => {
+                    const option = document.createElement('option');
+                    option.value = batch;
+                    option.textContent = batch;
+                    batchSelect.appendChild(option);
+                });
+
+                functions.forEach(func => {
+                    const option = document.createElement('option');
+                    option.value = func;
+                    option.textContent = func;
+                    functionSelect.appendChild(option);
+                });
+
+                businessProcesses.forEach(process => {
+                    const option = document.createElement('option');
+                    option.value = process;
+                    option.textContent = process;
+                    businessProcessSelect.appendChild(option);
+                });
+
+                // Restore previous selection if still available
+                if (currentValues.batch && Array.from(batchSelect.options).some(o => o.value === currentValues.batch)) {
+                    batchSelect.value = currentValues.batch;
+                }
+                if (currentValues.func && Array.from(functionSelect.options).some(o => o.value === currentValues.func)) {
+                    functionSelect.value = currentValues.func;
+                }
+                if (currentValues.bp && Array.from(businessProcessSelect.options).some(o => o.value === currentValues.bp)) {
+                    businessProcessSelect.value = currentValues.bp;
+                }
+            }
+
+            filterData() {
+                const batchFilter = document.getElementById('batchNumber').value;
+                const functionFilter = document.getElementById('function').value;
+                const businessProcessFilter = document.getElementById('businessProcess').value;
+
+                this.filteredData = this.currentData.filter(item => {
+                    const batchMatch = !batchFilter || (item.BatchNumber || item['Batch Number']) === batchFilter;
+                    const functionMatch = !functionFilter || item.Function === functionFilter;
+                    const processMatch = !businessProcessFilter || (item.BusinessProcess || item['Business Process']) === businessProcessFilter;
+                    
+                    return batchMatch && functionMatch && processMatch;
+                });
+
+                this.renderTable();
+            }
+
+            switchTab(tabName) {
+                // Remove active class from all tabs
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                // Add active class to clicked tab
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+                // Hide all tab contents
+                document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+                // Show the selected tab content
+                if (tabName === 'api-raw') {
+                    document.getElementById('tab-api-raw').style.display = '';
+                    this.renderApiRawTable();
+                } else {
+                    document.getElementById('tab-running-batches').style.display = '';
+                }
+                this.currentTab = tabName;
+                // Here you would implement different views for different tabs
+                console.log('Switched to tab:', tabName);
+            }
+
+            startAutoRefresh() {
+                setInterval(() => {
+                    this.loadData();
+                }, this.refreshInterval);
+            }
+
+            showRefreshIndicator() {
+                const indicator = document.getElementById('refreshIndicator');
+                indicator.style.display = 'flex';
+                
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 2000);
+            }
+
+            updateLastRefresh() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString();
+                document.getElementById('lastRefresh').textContent = `Last updated: ${timeString}`;
+            }
+
+            updateConnectionStatus(status) {
+                const statusElement = document.getElementById('connectionStatus');
+                statusElement.className = `status-indicator status-${status}`;
+                
+                switch(status) {
+                    case 'connected':
+                        statusElement.innerHTML = '<div class="status-dot"></div><span>Connected</span>';
+                        break;
+                    case 'fallback':
+                        statusElement.innerHTML = '<div class="status-dot"></div><span>Fallback Mode</span>';
+                        break;
+                    case 'error':
+                        statusElement.innerHTML = '<div class="status-dot"></div><span>Connection Error</span>';
+                        break;
+                }
+            }
+
+            updateApiStatus(message) {
+                const statusElement = document.getElementById('apiStatus');
+                statusElement.innerHTML = `<div class="status-dot"></div><span>${message}</span>`;
+            }
+
+            updateDebugInfo(message) {
+                const debugElement = document.getElementById('debugInfo');
+                const timestamp = new Date().toLocaleTimeString();
+                debugElement.innerHTML = `[${timestamp}] ${message}`;
+                console.log(`[${timestamp}] ${message}`);
+            }
+
+            toggleDebugPanel() {
+                const panel = document.getElementById('debugPanel');
+                panel.classList.toggle('show');
+            }
+
+            showLoadingOverlay() {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+            }
+
+            hideLoadingOverlay() {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new JPABatchTracker();
+        });
+    </script>
+</body>
+</html>
