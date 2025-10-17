@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1358,5 +1359,51 @@
             new JPABatchTracker();
         });
     </script>
+
+<script>
+  const apiUrl = 'https://your-api-url.com/api-endpoint';
+
+  async function loadBatchData() {
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const table = document.querySelector('table');
+      const loadingRow = table.querySelector('tr:nth-child(2)');
+      if (loadingRow) loadingRow.remove();
+
+      data.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.BatchNumber || ''}</td>
+          <td>${item.BusinessProcess || ''}</td>
+          <td>${item.Function || ''}</td>
+          <td>${item.OrderNo || ''}</td>
+          <td>${item.MaterialNo || ''}</td>
+          <td>${item.Source || ''}</td>
+          <td>${item.ActualStartTime || ''}</td>
+          <td>${item.ActualEndTime || ''}</td>
+          <td>${item.ActDays || ''}</td>
+          <td>${item.SctDays || ''}</td>
+          <td>${item.BatchProgress || ''}</td>
+          <td>${item.BatchStatus || ''}</td>
+        `;
+        table.appendChild(row);
+      });
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      const table = document.querySelector('table');
+      const errorRow = document.createElement('tr');
+      errorRow.innerHTML = `<td colspan="12">Error loading data: ${error.message}</td>`;
+      table.appendChild(errorRow);
+    }
+  }
+
+  window.onload = loadBatchData;
+</script>
+
 </body>
 </html>
